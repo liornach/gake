@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"os"
 	"path"
@@ -136,4 +137,24 @@ func collectTests(dir string) ([]TestEntry, error) {
 type TestEntry struct {
 	Name   string
 	Source string
+}
+
+func countLines(path string) (int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	count := 0
+	for scanner.Scan() {
+		count++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

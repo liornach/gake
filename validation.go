@@ -8,7 +8,7 @@ func validateExistingRootCmake(userRoot string) error {
 		return err
 	}
 
-	rendered, err := renderRootCmakeTmpl(projname)
+	rendered, err := insertProjnameToTemplate(projname)
 	if err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func validateExistingRootCmake(userRoot string) error {
 		return err
 	}
 
-	if !bytes.Equal(rendered, existing) {
+	if !bytes.Equal([]byte(rendered), existing) {
 		return notMadeByUsError{}
 	}
 

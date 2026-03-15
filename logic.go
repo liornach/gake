@@ -19,20 +19,45 @@ func gake(root string) error {
 		return err
 	}
 
-	var projname string
 	if !contain {
-		projname, err = projnameArgv()
-		if err != nil {
-			return err
-		}
-	} else {
-		projname, err = getProjNameFromCmake(root)
-		if err != nil {
-			return err
-		}
+		return initNewProj(root)
+
 	}
 
-	return initProj(root, projname)
+	return updateExistingProj(root)
+}
+
+func initNewProj(root string) error {
+	projName, err := projnameArgv()
+	if err != nil {
+		return err
+	}
+
+	if err := initNewRootCmake(root, projName); err != nil {
+		return err
+	}
+
+	if err := initSrcCmake(root); err != nil {
+		return err
+	}
+
+	if err := initTestCmake(root); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateExistingProj(root string) error {
+	if err := initSrcCmake(root); err != nil {
+		return err
+	}
+
+	if err := initTestCmake(root); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func initSrcCmake(root string) error {
@@ -46,7 +71,7 @@ func initSrcCmake(root string) error {
 		return err
 	}
 
-	content, err := renderSrcCmakeTmpl(cppmFiles)
+	content, err := insertDataToSrcTemplate(cppmFiles)
 	if err != nil {
 		return err
 	}
@@ -65,7 +90,7 @@ func initTestCmake(root string) error {
 		return err
 	}
 
-	content, err := renderTestsCmakeTmpl(tests)
+	content, err := insertDataToTestsTemplate(tests)
 	if err != nil {
 		return err
 	}
@@ -73,29 +98,13 @@ func initTestCmake(root string) error {
 	return createCmakeAtDir(tstDir, content)
 }
 
-func initProj(root, projName string) error {
-	if err := initRootCmake(root, projName); err != nil {
-		return err
-	}
-
-	if err := initSrcCmake(root); err != nil {
-		return err
-	}
-
-	if err := initTestCmake(root); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func initRootCmake(root, projname string) error {
-	content, err := renderRootCmakeTmpl(projname)
+func initNewRootCmake(root, projname string) error {
+	content, err := insertProjnameToTemplate(projname)
 	if err != nil {
 		return err
 	}
 
-	return createCmakeAtDir(root, content)
+	return createCmakeAtDir(root, []byte(content))
 }
 
 func createCmakeAtDir(dir string, content []byte) error {
