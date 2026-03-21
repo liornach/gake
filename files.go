@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -79,6 +80,48 @@ func containCmakeLists(path string) (bool, error) {
 
 func wd() (string, error) {
 	return os.Getwd()
+}
+
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		target := filepath.Join(dst, relPath)
+
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+
+		return copyFile(path, target)
+	})
+}
+
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+
+	return out.Sync()
 }
 
 func mkdir(fullpath string) error {

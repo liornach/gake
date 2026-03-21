@@ -16,33 +16,38 @@ func runAtUserRoot() error {
 func gake(root string) error {
 	contain, err := containCmakeLists(root)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	if !contain {
-		return initNewProj(root)
+		projName, err := projnameArgv()
+		if err != nil {
+			return wrapError("failed to get projname from argv", err)
+		}
 
+		if err := initNewProj(root, projName); err != nil {
+			return wrapError("failed to init new proj", err)
+		}
+	} else {
+		if err := updateExistingProj(root); err != nil {
+			return wrapError("failed to update existing project", err)
+		}
 	}
 
-	return updateExistingProj(root)
+	return nil
 }
 
-func initNewProj(root string) error {
-	projName, err := projnameArgv()
-	if err != nil {
-		return err
-	}
-
-	if err := initNewRootCmake(root, projName); err != nil {
-		return err
+func initNewProj(root, projname string) error {
+	if err := initNewRootCmake(root, projname); err != nil {
+		panic(err)
 	}
 
 	if err := initSrcCmake(root); err != nil {
-		return err
+		panic(err)
 	}
 
 	if err := initTestCmake(root); err != nil {
-		return err
+		panic(err)
 	}
 
 	return nil
@@ -87,12 +92,12 @@ func initTestCmake(root string) error {
 
 	tests, err := collectTests(tstDir)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	content, err := insertDataToTestsTemplate(tests)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	return createCmakeAtDir(tstDir, content)
@@ -101,10 +106,14 @@ func initTestCmake(root string) error {
 func initNewRootCmake(root, projname string) error {
 	content, err := insertProjnameToTemplate(projname)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	return createCmakeAtDir(root, []byte(content))
+	if err := createCmakeAtDir(root, []byte(content)); err != nil {
+		panic(err)
+	}
+
+	return nil
 }
 
 func createCmakeAtDir(dir string, content []byte) error {

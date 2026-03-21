@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
 type noProjNameErr struct {
 }
@@ -22,4 +25,13 @@ type missingDirError struct {
 
 func (e missingDirError) Error() string {
 	return fmt.Sprintf("expected directory structure missing: %s", e.dir)
+}
+
+func callerFuncName() string {
+	pc, _, _, _ := runtime.Caller(1)
+	return runtime.FuncForPC(pc).Name()
+}
+
+func wrapError(msg string, err error) error {
+	return fmt.Errorf("%s, err : %w", msg, err)
 }
