@@ -65,7 +65,7 @@ Implement the rest of this spec until every approved test passes, then refactor 
 <root>/
   CMakeLists.txt        # generated once (new project only)
   include/*.h           # public headers
-  src/*.c               # compiled into OBJECT library "Objects"
+  src/*.c               # compiled into OBJECT library named after <root> (see Library naming)
   src/CMakeLists.txt    # regenerated every run
   tests/*.c             # one test executable per file
   tests/CMakeLists.txt  # regenerated every run
@@ -87,6 +87,15 @@ Introduce a language type (e.g. `utils.Language` with `LangCXX`, `LangC`) and a 
 - Both → error: "mixed C and C++ module sources in src/, cannot infer language".
 - Neither (empty or missing `src/`) → CXX (today's default).
 
+## Library naming (C only)
+- The library is named after the directory that contains `src/`, which is the project root: `filepath.Base(root)`.
+  For example, `/home/me/calc/src` → `add_library(calc OBJECT)`.
+- The tests link against that name.
+- The name must be a valid CMake target name: letters, digits, `_ . + -` only. Anything else (spaces, `$`, …) → error
+  `ErrInvalidLibName`, naming the directory. Don't sanitize.
+- C++ keeps `Objects` unchanged, so its output stays byte-identical.
+- Executables are out of scope and will be named in a later feature.
+
 ## Language profile
 Replace the hard-coded extensions/templates with a per-language profile, for example:
 
@@ -96,7 +105,8 @@ Replace the hard-coded extensions/templates with a per-language profile, for exa
 | test extension   | `.cpp`                     | `.c`                     |
 | root template    | `CMakeLists.txt.tmpl`      | `CCMakeLists.txt.tmpl`   |
 | src template     | `SrcCMakeLists.txt.tmpl`   | `CSrcCMakeLists.txt.tmpl`|
-| tests template   | `TestsCMakeLists.txt.tmpl` | same (language-agnostic) |
+| tests template   | `TestsCMakeLists.txt.tmpl` | same (library name as a parameter) |
+| library name     | `Objects`                  | root dir name, validated |
 | extra dirs       | —                          | `include/`               |
 
 The logic layer asks for the profile once and passes it down. It must not branch on language all over the code.
@@ -120,38 +130,45 @@ src (`CSrcCMakeLists.txt.tmpl`):
 ```cmake
 cmake_minimum_required(VERSION 3.28)
 
-add_library(Objects OBJECT)
+add_library({{.LibName}} OBJECT)
 
-target_sources(Objects
+target_sources({{.LibName}}
     PRIVATE
 {{- range .Sources }}
     {{ . }}
 {{- end }}
 )
 
-target_include_directories(Objects
+target_include_directories({{.LibName}}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 ```
-tests: reuse `TestsCMakeLists.txt.tmpl` unchanged, with `tests/*.c` collected. Test names use the same `toCamelCase`.
+tests: reuse `TestsCMakeLists.txt.tmpl`, but replace the hard-coded `PRIVATE Objects` with `PRIVATE {{.LibName}}`. C++ passes
+`Objects`, so its output is unchanged. `tests/*.c` are collected, and test names use the same `toCamelCase`.
 
 ## Behaviour changes
 - `initNewProj`: detect the language, then create `include/` for C and render the profile's root, src and tests templates.
 - `updateExistingProj`: detect the language from the root CMakeLists, then regenerate src and tests with the profile. Create `include/` if it is missing (C only).
 - `CollectTests` takes the extension from the profile instead of hard-coding `.cpp`.
-- Language detection errors propagate as errors (no `panic`).
+- C only: work out and validate the library name before writing any file, so an invalid name leaves the project untouched.
+- Language detection and library-name errors propagate as errors (no `panic`).
 
 ## Tests
 Add stubs under `logic/tests-assets/project-stubs/`:
-- `new-c/`: `src/{core,utils}.c`, `include/{core,utils}.h`, `tests/{core,utils}.c`, no root CMakeLists.
+- `new-c/`: `src/{core,utils}.c`, `tests/{core,utils}.c`, no root CMakeLists, no `include/` (so its creation is tested).
 - `existing-c/`: the same, plus a root CMakeLists with `project(vm C)` and some user content after the core block.
 - `new-mixed/`: `src/a.c` + `src/b.cppm`. Must produce an error.
 
 Test cases:
-- `TestNewCProj`: the root, src and tests output match the exact strings above. `include/` exists.
-- `TestExistingCProj`: src and tests are regenerated with C content. The root file is untouched (byte-compare before and after).
+- `TestNewCProj`: the root, src and tests output match the exact strings above, with library `new-c`. `include/` is created.
+- `TestExistingCProj`: src and tests are regenerated with C content and library `existing-c`. The root file is untouched
+  (byte-compare before and after).
 - `TestNewMixedProjFails`.
+- `TestNewCProjInvalidLibName`: a C project in a directory named `my lib` fails with `ErrInvalidLibName` and writes no
+  CMakeLists.
+- Unit tests for `GetLibName(root)`: valid `calc`, `new-c`, `lib.v2`, `a+b`, `under_score`; invalid `my lib`, `bad$name`, `dir(1)`.
+  The root is passed as a full path, and only its last element is used.
 - Unit tests for `project()` language parsing: `project(x C)`, `project(x CXX)`, `project(x C CXX)`,
   `project(x VERSION 1.2 LANGUAGES C)`, `project(x)`, lowercase `project(x c)`.
 - Existing `TestNewProj` must pass unchanged.
@@ -163,6 +180,8 @@ Test cases:
 - Generating an executable for `main.c`/`main.cpp`.
 - Preserving user content in the root CMakeLists (`parseRootCmake`/`validateExistingRootCmake` stay unused).
 - A `--lang` override flag.
+- Naming executables. That is a later feature.
+- Name clashes between the library and a test target (for example, root `Core` with `tests/core.c` → test `Core`).
 
 ## Known issues
 - `parseRootCmake` passes a file path to `getProjNameFromCmake`, which expects a directory. Don't copy this pattern when reusing the parser.
