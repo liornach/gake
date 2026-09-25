@@ -1,19 +1,10 @@
 package utils
 
 import (
-	"embed"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 )
-
-const (
-	rootCmakeTmpl = "CMakeLists.txt.tmpl"
-)
-
-//go:embed CMakeLists.txt.tmpl
-var rootEmbed embed.FS
 
 type cmakeRootContent struct {
 	core        string
@@ -21,7 +12,7 @@ type cmakeRootContent struct {
 }
 
 func parseRootCmake(cmakeFilePath string) (cmakeRootContent, error) {
-	projName, err := getProjNameFromCmake(cmakeFilePath)
+	projName, err := readProjNameFromCmake(cmakeFilePath)
 	if err != nil {
 		return cmakeRootContent{}, err
 	}
@@ -44,7 +35,7 @@ func parseRootCmake(cmakeFilePath string) (cmakeRootContent, error) {
 }
 
 func InsertProjnameToTemplate(projname string) (string, error) {
-	rendered, err := insertDataToTemplate(rootEmbed, rootCmakeTmpl, cmakeProjname{ProjName: projname})
+	rendered, err := insertDataToTemplate(cxxRootCmakeTmpl, cmakeProjname{ProjName: projname})
 	if err != nil {
 		return "", err
 	}
@@ -52,19 +43,16 @@ func InsertProjnameToTemplate(projname string) (string, error) {
 	return string(rendered), nil
 }
 
-func getProjNameFromCmake(root string) (string, error) {
-	data, err := os.ReadFile(JoinCmakeLists(root))
+func readProjNameFromCmake(root string) (string, error) {
+	data, err := readExistingCmake(root)
 	if err != nil {
 		return "", err
 	}
 
-	// case-insensitive match for project(...)
-	re := regexp.MustCompile(`(?i)project\s*\(\s*([^\s\)]+)`)
-
-	m := re.FindSubmatch(data)
-	if m == nil {
+	args := getProjectArgs(data)
+	if len(args) == 0 {
 		return "", fmt.Errorf("project() not found")
 	}
 
-	return string(m[1]), nil
+	return args[0], nil
 }

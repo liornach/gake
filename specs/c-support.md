@@ -230,6 +230,12 @@ Stubs under `logic/tests-assets/project-stubs/` (source files are empty):
 - `TestExistingProk` (rewritten): runs through `gake` on its own copy of `existing`. Exact C++ src and tests output, root unchanged, no `include/`.
 - `TestNewProj` (pre-existing) stays unchanged.
 
+Added after `/code-review` (bug fixes, red-green):
+- `TestGetLanguageFromCmakeIgnoresNonLanguageText` (utils): comments, parentheses inside quoted `DESCRIPTION`, and the
+  project name / `DESCRIPTION` / `HOMEPAGE_URL` values never count as languages.
+- `TestRunGakeHelp` (logic, end-to-end through `runGake(root, argv, out)`): `-h`/`--help` prints usage listing both
+  flags, succeeds, and leaves the project unchanged.
+
 ## Out of scope
 - Mixed C/C++ projects (C sources plus C++ modules in one target).
 - Generating an executable for `main.c`/`main.cpp`.

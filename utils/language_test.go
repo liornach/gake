@@ -133,3 +133,30 @@ func TestGetLibName(t *testing.T) {
 		})
 	}
 }
+
+// Only the real project() call counts, and only its language arguments.
+func TestGetLanguageFromCmakeIgnoresNonLanguageText(t *testing.T) {
+	cases := []struct {
+		name  string
+		cmake string
+		want  Language
+	}{
+		{"comment mentioning project( before the call", "# the project (C only)\nproject(vm CXX)", LangCXX},
+		{"commented-out project() before the call", "#project(old CXX)\nproject(vm C)", LangC},
+		{"trailing comment after the call", "project(vm C) # CXX later", LangC},
+		{"parentheses inside DESCRIPTION", `project(vm VERSION 1.0 DESCRIPTION "VM (bytecode)" LANGUAGES C)`, LangC},
+		{"DESCRIPTION mentioning C", `project(vm DESCRIPTION "C tools")`, LangCXX},
+		{"HOMEPAGE_URL ending in C", `project(vm HOMEPAGE_URL "https://example.com/C" LANGUAGES CXX)`, LangCXX},
+		{"project named c", "project(c)", LangCXX},
+		{"project named cxx, language C", "project(cxx C)", LangC},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := getLanguageFromCmake([]byte(c.cmake))
+			if got != c.want {
+				t.Fatalf("getLanguageFromCmake(%q) = %v, want %v", c.cmake, got, c.want)
+			}
+		})
+	}
+}

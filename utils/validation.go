@@ -13,7 +13,7 @@ func (notMadeByUsError) Error() string {
 }
 
 func validateExistingRootCmake(userRoot string) error {
-	projname, err := getProjNameFromCmake(userRoot)
+	projname, err := readProjNameFromCmake(userRoot)
 	if err != nil {
 		return err
 	}

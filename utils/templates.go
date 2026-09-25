@@ -7,23 +7,15 @@ import (
 	"text/template"
 )
 
-//go:embed SrcCMakeLists.txt.tmpl
-var srcCmakeEmbed embed.FS
-
-//go:embed TestsCMakeLists.txt.tmpl
-var testsCmakeEmbed embed.FS
-
-const (
-	srcCmakeTmpl   = "SrcCMakeLists.txt.tmpl"
-	testsCmakeTmpl = "TestsCMakeLists.txt.tmpl"
-)
+//go:embed *.tmpl
+var templatesFS embed.FS
 
 type cmakeProjname struct {
 	ProjName string
 }
 
-func insertDataToTemplate(embedFs embed.FS, tmplFileName string, data any) ([]byte, error) {
-	tmplBytes, err := embedFs.ReadFile(tmplFileName)
+func insertDataToTemplate(tmplFileName string, data any) ([]byte, error) {
+	tmplBytes, err := templatesFS.ReadFile(tmplFileName)
 	if err != nil {
 		return nil, err
 	}
@@ -41,24 +33,28 @@ func insertDataToTemplate(embedFs embed.FS, tmplFileName string, data any) ([]by
 	return buf.Bytes(), nil
 }
 
-type cmakeCppmFiles struct {
-	CppmFiles []string
-}
-
-func InsertDataToSrcTemplate(cppmFiles []string) ([]byte, error) {
-	return insertDataToTemplate(srcCmakeEmbed, srcCmakeTmpl, cmakeCppmFiles{CppmFiles: cppmFiles})
+type srcTemplateData struct {
+	LibName string
+	Sources []string
 }
 
 func readExistingCmake(root string) ([]byte, error) {
 	return os.ReadFile(JoinCmakeLists(root))
 }
 
-type TestsTemplateData struct {
-	Tests []TestEntry
+type testsTemplateData struct {
+	LibName string
+	Tests   []TestEntry
 }
 
-func InsertDataToTestsTemplate(tests []TestEntry) ([]byte, error) {
-	return insertDataToTemplate(testsCmakeEmbed, testsCmakeTmpl, TestsTemplateData{
-		Tests: tests,
-	})
+func RenderRootCmake(profile Profile, projName string) ([]byte, error) {
+	return insertDataToTemplate(profile.rootTmpl, cmakeProjname{ProjName: projName})
+}
+
+func RenderSrcCmake(profile Profile, sources []string) ([]byte, error) {
+	return insertDataToTemplate(profile.srcTmpl, srcTemplateData{LibName: profile.LibName, Sources: sources})
+}
+
+func RenderTestsCmake(profile Profile, tests []TestEntry) ([]byte, error) {
+	return insertDataToTemplate(testsCmakeTmpl, testsTemplateData{LibName: profile.LibName, Tests: tests})
 }

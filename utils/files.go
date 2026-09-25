@@ -11,8 +11,12 @@ import (
 	"strings"
 )
 
-func srcDir(root string) string {
-	return JoinPath(root, "./src")
+func GetSrcDir(root string) string {
+	return JoinPath(root, "src")
+}
+
+func GetTestsDir(root string) string {
+	return JoinPath(root, "tests")
 }
 
 func normalizeExt(ext string) string {
@@ -27,8 +31,18 @@ func normalizeExt(ext string) string {
 	return ext
 }
 
-func CollectAllFilesWithExt(dir string, ext string) ([]string, error) {
+// readDirIfExists is os.ReadDir, except that a missing dir reads as empty.
+func readDirIfExists(dir string) ([]os.DirEntry, error) {
 	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+
+	return entries, err
+}
+
+func CollectAllFilesWithExt(dir string, ext string) ([]string, error) {
+	entries, err := readDirIfExists(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -147,31 +161,15 @@ func toCamelCase(s string) string {
 	return strings.Join(parts, "")
 }
 
-func CollectTests(dir string) ([]TestEntry, error) {
-	entries, err := os.ReadDir(dir)
+func CollectTests(dir string, testExt string) ([]TestEntry, error) {
+	sources, err := CollectAllFilesWithExt(dir, testExt)
 	if err != nil {
 		return nil, err
 	}
 
-	tests := make([]TestEntry, 0, len(entries))
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		name := entry.Name()
-		ext := path.Ext(name)
-		if ext != ".cpp" {
-			continue
-		}
-
-		base := strings.TrimSuffix(name, ext)
-
-		tests = append(tests, TestEntry{
-			Name:   toCamelCase(base),
-			Source: name,
-		})
+	tests := make([]TestEntry, 0, len(sources))
+	for _, source := range sources {
+		tests = append(tests, getTestEntry(source))
 	}
 
 	slices.SortFunc(tests, func(a, b TestEntry) int {
@@ -179,6 +177,11 @@ func CollectTests(dir string) ([]TestEntry, error) {
 	})
 
 	return tests, nil
+}
+
+func getTestEntry(source string) TestEntry {
+	base := strings.TrimSuffix(source, filepath.Ext(source))
+	return TestEntry{Name: toCamelCase(base), Source: source}
 }
 
 type TestEntry struct {

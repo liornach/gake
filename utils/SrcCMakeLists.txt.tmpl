@@ -5,7 +5,7 @@ add_library(Objects OBJECT)
 target_sources(Objects
     PUBLIC
     FILE_SET CXX_MODULES FILES
-{{- range .CppmFiles }}
+{{- range .Sources }}
     {{ . }}
 {{- end }}
 )

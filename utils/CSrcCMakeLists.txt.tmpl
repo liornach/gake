@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.28)
+
+add_library({{.LibName}} OBJECT)
+
+target_sources({{.LibName}}
+    PRIVATE
+{{- range .Sources }}
+    {{ . }}
+{{- end }}
+)
+
+target_include_directories({{.LibName}}
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)

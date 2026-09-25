@@ -4,7 +4,7 @@ function(AddTest TEST_NAME TEST_SOURCE)
     )
 
     target_link_libraries(${TEST_NAME}
-        PRIVATE Objects
+        PRIVATE {{ .LibName }}
     )
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})

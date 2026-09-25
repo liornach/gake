@@ -10,6 +10,11 @@ func callerFuncName() string {
 	return runtime.FuncForPC(pc).Name()
 }
 
+// wrapError adds context to err; a nil err stays nil.
 func wrapError(msg string, err error) error {
+	if err == nil {
+		return nil
+	}
+
 	return fmt.Errorf("%s, err : %w", msg, err)
 }
