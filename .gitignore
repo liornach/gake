@@ -6,5 +6,7 @@
 !*.tmpl
 !*.md
 !logic/tests-assets/**
+!.claude/settings.json
+!.claude/*.sh
 
 logic/.tmp/

@@ -1,36 +1,38 @@
 package logic
 
 import (
-	"fmt"
 	"gake/utils"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
-func validateContainingCmake(path, errMsg string, t *testing.T) {
-	if exist, err := utils.IsFileExist(path); err != nil {
-		panic(err)
-	} else if !exist {
-		t.Fatal(errMsg)
-	}
-}
+const cxxProjExpectedCmakeTests = `function(AddTest TEST_NAME TEST_SOURCE)
+    add_executable(${TEST_NAME}
+        ${TEST_SOURCE}
+    )
 
+    target_link_libraries(${TEST_NAME}
+        PRIVATE Objects
+    )
+
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endfunction()
+AddTest(Core core.cpp)
+AddTest(FuckYou fuck_you.cpp)
+AddTest(Helper helper.cpp)
+AddTest(Utils utils.cpp)`
+
+// The existing stub already holds empty src/ and tests/ CMakeLists, so the content is
+// what proves they were regenerated.
 func TestExistingProk(t *testing.T) {
-	sandboxDir, err := initTestSandbox()
-	if err != nil {
-		panic(err)
+	root := createStubCopy(t, "existing")
+	rootCmakeBefore := readCmake(t, root)
+
+	if err := gake(root, utils.Args{}); err != nil {
+		t.Fatal(err)
 	}
 
-	defer os.RemoveAll(sandboxDir)
-
-	err = updateExistingProj(sandboxDir)
-	if err != nil {
-		panic(err)
-	}
-
-	srcCmake := filepath.Join(sandboxDir, "src", "CMakeLists.txt")
-	validateContainingCmake(srcCmake, fmt.Sprintf("CMakeLists.txt in src direcotry is not exist (file %s not found)", srcCmake), t)
-	testCmake := filepath.Join(sandboxDir, "tests", "CMakeLists.txt")
-	validateContainingCmake(testCmake, fmt.Sprintf("CMakeLists.txt in tests direcotry is not exist (file %s not found)", srcCmake), t)
+	assertCmakeContent(t, root, rootCmakeBefore)
+	assertCmakeContent(t, utils.JoinPath(root, "src"), newProjExpectedCmakeSrc)
+	assertCmakeContent(t, utils.JoinPath(root, "tests"), cxxProjExpectedCmakeTests)
+	assertNoDir(t, utils.JoinPath(root, "include"))
 }

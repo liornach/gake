@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.28)
+project(vm C)
+
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED True)
+
+enable_testing()
+
+add_subdirectory(./src)
+add_subdirectory(./tests)
+
+add_executable(vm
+    main.c
+)
+
+target_link_libraries(vm PRIVATE existing-c)
