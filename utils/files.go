@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"bufio"
@@ -12,7 +12,7 @@ import (
 )
 
 func srcDir(root string) string {
-	return joinPath(root, "./src")
+	return JoinPath(root, "./src")
 }
 
 func normalizeExt(ext string) string {
@@ -27,7 +27,7 @@ func normalizeExt(ext string) string {
 	return ext
 }
 
-func collectAllFilesWithExt(dir string, ext string) ([]string, error) {
+func CollectAllFilesWithExt(dir string, ext string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func collectAllFilesWithExt(dir string, ext string) ([]string, error) {
 	return result, nil
 }
 
-func joinPath(left, right string) string {
+func JoinPath(left, right string) string {
 	return path.Join(left, right)
 }
 
@@ -64,13 +64,12 @@ func dirExists(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
-func joinCmakeLists(dir string) string {
-	return joinPath(dir, "/CMakeLists.txt")
+func JoinCmakeLists(dir string) string {
+	return JoinPath(dir, "/CMakeLists.txt")
 }
 
-func containCmakeLists(path string) (bool, error) {
-	fullPath := joinCmakeLists(path)
-	_, err := os.Stat(fullPath)
+func IsFileExist(path string) (bool, error) {
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
@@ -78,11 +77,16 @@ func containCmakeLists(path string) (bool, error) {
 	return err == nil, err
 }
 
-func wd() (string, error) {
+func ContainCmakeLists(path string) (bool, error) {
+	fullPath := JoinCmakeLists(path)
+	return IsFileExist(fullPath)
+}
+
+func Wd() (string, error) {
 	return os.Getwd()
 }
 
-func copyDir(src, dst string) error {
+func CopyDir(src, dst string) error {
 	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -124,7 +128,7 @@ func copyFile(src, dst string) error {
 	return out.Sync()
 }
 
-func mkdir(fullpath string) error {
+func Mkdir(fullpath string) error {
 	return os.MkdirAll(fullpath, 0755)
 }
 
@@ -143,7 +147,7 @@ func toCamelCase(s string) string {
 	return strings.Join(parts, "")
 }
 
-func collectTests(dir string) ([]TestEntry, error) {
+func CollectTests(dir string) ([]TestEntry, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err

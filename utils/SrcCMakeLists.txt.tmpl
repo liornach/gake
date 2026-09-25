@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.28)
+
+add_library(Objects OBJECT)
+
+target_sources(Objects
+    PUBLIC
+    FILE_SET CXX_MODULES FILES
+{{- range .CppmFiles }}
+    {{ . }}
+{{- end }}
+)

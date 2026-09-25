@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"embed"
@@ -31,7 +31,7 @@ func parseRootCmake(cmakeFilePath string) (cmakeRootContent, error) {
 		return cmakeRootContent{}, err
 	}
 
-	core, err := insertProjnameToTemplate(projName)
+	core, err := InsertProjnameToTemplate(projName)
 	if err != nil {
 		return cmakeRootContent{}, err
 	}
@@ -43,7 +43,7 @@ func parseRootCmake(cmakeFilePath string) (cmakeRootContent, error) {
 	}, nil
 }
 
-func insertProjnameToTemplate(projname string) (string, error) {
+func InsertProjnameToTemplate(projname string) (string, error) {
 	rendered, err := insertDataToTemplate(rootEmbed, rootCmakeTmpl, cmakeProjname{ProjName: projname})
 	if err != nil {
 		return "", err
@@ -53,7 +53,7 @@ func insertProjnameToTemplate(projname string) (string, error) {
 }
 
 func getProjNameFromCmake(root string) (string, error) {
-	data, err := os.ReadFile(joinCmakeLists(root))
+	data, err := os.ReadFile(JoinCmakeLists(root))
 	if err != nil {
 		return "", err
 	}

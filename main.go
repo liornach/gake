@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"gake/logic"
 	"log"
 )
 
 func main() {
-	if err := runAtUserRoot(); err != nil {
+	if err := logic.RunAtUserRoot(); err != nil {
 		log.Fatal(err)
 	}
 

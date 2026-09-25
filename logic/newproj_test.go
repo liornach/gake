@@ -1,8 +1,9 @@
-package main
+package logic
 
 import (
 	"errors"
 	"fmt"
+	"gake/utils"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,12 +13,12 @@ import (
 const testsAssets = "tests-assets"
 
 func testSandboxPath(testDir string) string {
-	return joinPath(testDir, ".tmp")
+	return utils.JoinPath(testDir, ".tmp")
 }
 
 func copyAssetsToTestSandbox(testAssetsDir, testDir string) (string, error) {
 	sandboxDir := testSandboxPath(testDir)
-	if err := copyDir(testAssetsDir, sandboxDir); err != nil {
+	if err := utils.CopyDir(testAssetsDir, sandboxDir); err != nil {
 		return "", err
 	}
 
@@ -37,13 +38,13 @@ func thisTestDir() (string, error) {
 func initTestSandbox() (string, error) {
 	testsDir, err := thisTestDir()
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
-	assetsDir := joinPath(testsDir, testsAssets)
+	assetsDir := utils.JoinPath(testsDir, testsAssets)
 	sandboxDir, err := copyAssetsToTestSandbox(assetsDir, testsDir)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
 	return sandboxDir, nil
@@ -54,7 +55,7 @@ func testProjName() string {
 }
 
 func newProjSandboxRootPath(sandboxDir string) string {
-	return joinPath(sandboxDir, "project-stubs/new")
+	return utils.JoinPath(sandboxDir, "project-stubs/new")
 }
 
 const newProjTestName = "test_project"
@@ -86,8 +87,10 @@ target_sources(Objects
 func TestNewProj(t *testing.T) {
 	sandboxDir, err := initTestSandbox()
 	if err != nil {
-		t.Fatal("could not initialize sandbox directory")
+		panic(err)
 	}
+
+	defer os.RemoveAll(sandboxDir)
 
 	sandboxRoot := newProjSandboxRootPath(sandboxDir)
 	if err := initNewProj(sandboxRoot, "testproj"); err != nil {
@@ -98,7 +101,7 @@ func TestNewProj(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := os.ReadFile(joinCmakeLists(sandboxRoot))
+	res, err := os.ReadFile(utils.JoinCmakeLists(sandboxRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +110,7 @@ func TestNewProj(t *testing.T) {
 		t.Fatal("CmakeLists.txt at root is different than expected")
 	}
 
-	res, err = os.ReadFile(joinCmakeLists(joinPath(sandboxRoot, "src")))
+	res, err = os.ReadFile(utils.JoinCmakeLists(utils.JoinPath(sandboxRoot, "src")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +119,7 @@ func TestNewProj(t *testing.T) {
 		t.Fatal("CmakeLists.txt at src dir is different than expected")
 	}
 
-	res, err = os.ReadFile(joinCmakeLists(joinPath(sandboxRoot, "tests")))
+	res, err = os.ReadFile(utils.JoinCmakeLists(utils.JoinPath(sandboxRoot, "tests")))
 	if err != nil {
 		t.Fatal(err)
 	}

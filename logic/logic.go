@@ -1,11 +1,12 @@
-package main
+package logic
 
 import (
+	"gake/utils"
 	"os"
 )
 
-func runAtUserRoot() error {
-	wd, err := wd()
+func RunAtUserRoot() error {
+	wd, err := utils.Wd()
 	if err != nil {
 		return err
 	}
@@ -14,13 +15,13 @@ func runAtUserRoot() error {
 }
 
 func gake(root string) error {
-	contain, err := containCmakeLists(root)
+	contain, err := utils.ContainCmakeLists(root)
 	if err != nil {
 		panic(err)
 	}
 
 	if !contain {
-		projName, err := projnameArgv()
+		projName, err := utils.ProjnameArgv()
 		if err != nil {
 			return wrapError("failed to get projname from argv", err)
 		}
@@ -67,16 +68,16 @@ func updateExistingProj(root string) error {
 
 func initSrcCmake(root string) error {
 	srcDir := root + "/src"
-	if err := mkdir(srcDir); err != nil {
+	if err := utils.Mkdir(srcDir); err != nil {
 		return err
 	}
 
-	cppmFiles, err := collectAllFilesWithExt(srcDir, "cppm")
+	cppmFiles, err := utils.CollectAllFilesWithExt(srcDir, "cppm")
 	if err != nil {
 		return err
 	}
 
-	content, err := insertDataToSrcTemplate(cppmFiles)
+	content, err := utils.InsertDataToSrcTemplate(cppmFiles)
 	if err != nil {
 		return err
 	}
@@ -86,16 +87,16 @@ func initSrcCmake(root string) error {
 
 func initTestCmake(root string) error {
 	tstDir := root + "/tests"
-	if err := mkdir(tstDir); err != nil {
+	if err := utils.Mkdir(tstDir); err != nil {
 		return err
 	}
 
-	tests, err := collectTests(tstDir)
+	tests, err := utils.CollectTests(tstDir)
 	if err != nil {
 		panic(err)
 	}
 
-	content, err := insertDataToTestsTemplate(tests)
+	content, err := utils.InsertDataToTestsTemplate(tests)
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +105,7 @@ func initTestCmake(root string) error {
 }
 
 func initNewRootCmake(root, projname string) error {
-	content, err := insertProjnameToTemplate(projname)
+	content, err := utils.InsertProjnameToTemplate(projname)
 	if err != nil {
 		panic(err)
 	}
@@ -117,6 +118,6 @@ func initNewRootCmake(root, projname string) error {
 }
 
 func createCmakeAtDir(dir string, content []byte) error {
-	file := joinCmakeLists(dir)
+	file := utils.JoinCmakeLists(dir)
 	return os.WriteFile(file, content, 0644)
 }

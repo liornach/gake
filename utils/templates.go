@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"bytes"
@@ -45,19 +45,19 @@ type cmakeCppmFiles struct {
 	CppmFiles []string
 }
 
-func insertDataToSrcTemplate(cppmFiles []string) ([]byte, error) {
+func InsertDataToSrcTemplate(cppmFiles []string) ([]byte, error) {
 	return insertDataToTemplate(srcCmakeEmbed, srcCmakeTmpl, cmakeCppmFiles{CppmFiles: cppmFiles})
 }
 
 func readExistingCmake(root string) ([]byte, error) {
-	return os.ReadFile(joinCmakeLists(root))
+	return os.ReadFile(JoinCmakeLists(root))
 }
 
 type TestsTemplateData struct {
 	Tests []TestEntry
 }
 
-func insertDataToTestsTemplate(tests []TestEntry) ([]byte, error) {
+func InsertDataToTestsTemplate(tests []TestEntry) ([]byte, error) {
 	return insertDataToTemplate(testsCmakeEmbed, testsCmakeTmpl, TestsTemplateData{
 		Tests: tests,
 	})

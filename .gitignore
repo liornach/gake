@@ -1,7 +1,10 @@
 *
+!*/
 !.gitignore
 !go.mod
 !*.go
+!*.tmpl
+!*.md
+!logic/tests-assets/**
 
-!tests-assets
-!tests-assets/**
+logic/.tmp/
